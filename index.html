@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Мультики</title>
+  
+  <!-- iOS Safari WebApp мета-теги -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Мультики">
+  <meta name="theme-color" content="#121214">
+
+  <!-- SVG Favicon / App Icon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231cb07b'/><path d='M38 30 L72 50 L38 70 Z' fill='white'/></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231cb07b'/><path d='M38 30 L72 50 L38 70 Z' fill='white'/></svg>">
+
+  <script>
+    // Якщо відкриваємо не в Safari (наприклад, десктопний Chrome), динамічно підвантажуємо hls.js
+    if (!document.createElement('video').canPlayType('application/vnd.apple.mpegurl')) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+      document.head.appendChild(script);
+    }
+  </script>
+
+  <style>
+    :root {
+      --accent: #1cb07b;
+      --accent-hover: #169668;
+      --bg: #0f1012;
+      --card-bg: #1a1c1e;
+      --card-hover: #24272b;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f5f5f7;
+      --text-muted: #8e8e93;
+      --danger: #ff453a;
+      --warning: #ffd60a;
+      --tab-bar-bg: rgba(26, 28, 30, 0.88);
+      --radius: 14px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-top: calc(var(--safe-top) + 12px);
+      padding-bottom: calc(var(--safe-bottom) + 80px);
+      min-height: 100vh;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Верхня шапка */
+    header {
+      padding: 0 16px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .app-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .app-title span.badge {
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--accent);
+      color: #fff;
+      padding: 3px 7px;
+      border-radius: 8px;
+      text-transform: uppercase;
+    }
+
+    .timer-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+    }
+
+    .timer-pill.active {
+      color: var(--warning);
+      border-color: rgba(255, 214, 10, 0.3);
+    }
+
+    /* Горизонтальна полиця історії (WatchHistoryShelf) */
+    .shelf-container {
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .shelf-header {
+      padding: 0 16px 8px;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .shelf-scroll {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding: 4px 16px 12px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .shelf-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .shelf-card {
+      flex: 0 0 130px;
+      width: 130px;
+      min-width: 130px;
+      scroll-snap-align: start;
+      cursor: pointer;
+    }
+
+    .shelf-card .cartoon-title {
+      font-size: 13px;
+      line-height: 1.25;
+      height: 2.5em;
+    }
+
+    /* Пошук */
+    .search-box {
+      padding: 0 16px 14px;
+    }
+
+    .search-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-input-wrapper svg {
+      position: absolute;
+      left: 12px;
+      fill: var(--text-muted);
+      width: 16px;
+      height: 16px;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 9px 12px 9px 36px;
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+    }
+
+    /* Сітка карток мультиків */
+    .cartoons-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px 12px;
+      padding: 0 16px;
+    }
+
+    @media (min-width: 600px) {
+      .cartoons-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+    @media (min-width: 900px) {
+      .cartoons-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+    @media (min-width: 1200px) {
+      .cartoons-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+    }
+
+    /* Картка мультика */
+    .cartoon-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .poster-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .cartoon-card:active .poster-wrap {
+      transform: scale(0.97);
+    }
+
+    .poster-wrap img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+      transition: opacity 0.2s;
+    }
+
+    /* Кнопка вотчліста на постері */
+    .btn-watchlist-toggle {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 2;
+      transition: transform 0.1s, background 0.2s;
+    }
+
+    .btn-watchlist-toggle.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn-watchlist-toggle:active {
+      transform: scale(0.85);
+    }
+
+    /* Тонкий індикатор прогресу */
+    .progress-bar-wrap {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 2;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      border-radius: 0 2px 2px 0;
+    }
+
+    .cartoon-title {
+      margin-top: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.35;
+      color: var(--text);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      height: 2.7em;
+      word-break: break-word;
+    }
+
+    /* Кнопка пагінації */
+    .pagination-bar {
+      padding: 24px 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .btn-load-more {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-load-more:active {
+      background: var(--card-hover);
+    }
+
+    /* Вкладки (Tabs) */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Список Історії */
+    .history-list {
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .history-item {
+      display: flex;
+      gap: 14px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 10px;
+      align-items: center;
+    }
+
+    .history-poster {
+      width: 60px;
+      height: 90px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: #000;
+      cursor: pointer;
+    }
+
+    .history-poster img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .history-info {
+      flex: 1;
+      min-width: 0;
+      cursor: pointer;
+    }
+
+    .history-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .history-progress {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .history-progress-fill {
+      height: 100%;
+      background: var(--accent);
+    }
+
+    .btn-delete-item {
+      background: none;
+      border: none;
+      color: var(--danger);
+      padding: 8px;
+      cursor: pointer;
+    }
+
+    /* Секція "Батькам" */
+    .parent-gate-box {
+      max-width: 380px;
+      margin: 40px auto;
+      padding: 24px 20px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      text-align: center;
+    }
+
+    .pin-input {
+      letter-spacing: 16px;
+      font-size: 32px;
+      font-weight: 700;
+      text-align: center;
+      width: 180px;
+      padding: 8px;
+      margin: 20px auto;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      color: var(--accent);
+      outline: none;
+    }
+
+    .settings-group {
+      margin-top: 20px;
+      text-align: left;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 16px;
+      border-radius: 12px;
+    }
+
+    .settings-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .settings-row:last-child {
+      border-bottom: none;
+    }
+
+    select, button.action-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    button.primary-btn {
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      font-weight: 700;
+      padding: 12px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 14px;
+    }
+
+    /* Нижня панель навігації (Tab Bar) */
+    .tab-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: calc(56px + var(--safe-bottom));
+      padding-bottom: var(--safe-bottom);
+      background: var(--tab-bar-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+
+    .tab-item.active {
+      color: var(--accent);
+    }
+
+    .tab-item svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+    }
+
+    /* Плеєр Оверлей */
+    .player-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #000;
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .player-overlay.open {
+      display: flex;
+    }
+
+    .player-overlay video {
+      width: 100%;
+      height: 100%;
+      max-height: 100vh;
+      object-fit: contain;
+      background: #000;
+    }
+
+    .player-close-btn {
+      position: absolute;
+      top: calc(var(--safe-top) + 16px);
+      left: 16px;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(30, 30, 30, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 1010;
+    }
+
+    /* Діалог відновлення перегляду (Resume Modal) */
+    .resume-dialog {
+      position: absolute;
+      bottom: calc(var(--safe-bottom) + 30px);
+      background: rgba(26, 28, 30, 0.95);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 18px 24px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      z-index: 1020;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      max-width: 90%;
+    }
+
+    .resume-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-resume {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .btn-restart {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* Перерва для очей (EyeRestOverlay) */
+    .eye-rest-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(20px);
+      z-index: 2000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .eye-icon {
+      font-size: 72px;
+      margin-bottom: 16px;
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      padding: 60px 20px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Верхня шапка -->
+  <header>
+    <div class="app-title">
+      Мультики <span class="badge">iOS</span>
+    </div>
+    <div class="timer-pill" id="timerPill">
+      <span>⏱️</span>
+      <span id="screenTimeText">20 хв</span>
+    </div>
+  </header>
+
+  <!-- Верхня полиця "Останні перегляди" (як в iOS застосунку) -->
+  <div class="shelf-container" id="shelfContainer">
+    <div class="shelf-header">
+      <span>🕒</span> Останні перегляди
+    </div>
+    <div class="shelf-scroll" id="shelfScroll"></div>
+  </div>
+
+  <!-- Вкладка 1: Мультики (Каталог) -->
+  <main id="tabCartoons" class="tab-content active">
+    <div class="search-box">
+      <div class="search-input-wrapper">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" id="searchInput" class="search-input" placeholder="Пошук мультика...">
+      </div>
+    </div>
+    <div class="cartoons-grid" id="cartoonsGrid"></div>
+    <div class="pagination-bar" id="paginationBar">
+      <div id="scrollSentinel" style="height: 20px; width: 100%;"></div>
+      <div id="infiniteLoading" style="display: none; padding: 18px 0; color: var(--text-muted); font-size: 14px; text-align: center;">
+        <span style="display: inline-block; animation: spin 1s linear infinite; margin-right: 6px;">⏳</span> Завантаження наступних мультиків…
+      </div>
+      <button class="btn-load-more" id="btnLoadMore" style="display: none;">Показати ще (+10)</button>
+    </div>
+  </main>
+
+  <!-- Вкладка 2: Історія -->
+  <main id="tabHistory" class="tab-content">
+    <div style="padding: 0 16px 14px; display: flex; justify-content: space-between; align-items: center;">
+      <h2 style="font-size: 20px; font-weight: 700;">Історія переглядів</h2>
+      <button class="action-btn" id="btnClearHistory" style="color: var(--danger);">Очистити</button>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </main>
+
+  <!-- Вкладка 3: Вотч-ліст -->
+  <main id="tabWatchlist" class="tab-content">
+    <div style="padding: 0 16px 14px;">
+      <h2 style="font-size: 20px; font-weight: 700;">Вотч-ліст</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">Мультики, збережені на потім</p>
+    </div>
+    <div class="cartoons-grid" id="watchlistGrid"></div>
+  </main>
+
+  <!-- Вкладка 4: Додати (Імпорт JSON) -->
+  <main id="tabAdd" class="tab-content">
+    <div style="max-width: 440px; margin: 20px auto; padding: 0 16px;">
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Додати свій список</h2>
+      <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">
+        Ви можете імпортувати JSON-файл зі своїми мультиками прямо з телефону, як у застосунку CartoonsApp.
+      </p>
+      
+      <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 18px; text-align: center; margin-bottom: 16px;">
+        <label for="jsonFileInput" class="btn-load-more" style="display: inline-block; cursor: pointer; background: var(--accent); color: #fff; border: none;">
+          📁 Вибрати JSON-файл
+        </label>
+        <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
+      </div>
+
+      <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 16px;">
+        <h3 style="font-size: 15px; margin-bottom: 8px;">Або вставте JSON сюди:</h3>
+        <textarea id="jsonTextInput" style="width: 100%; height: 120px; background: #000; border: 1px solid var(--card-border); border-radius: 8px; color: #fff; font-family: monospace; font-size: 12px; padding: 8px; box-sizing: border-box; outline: none;"></textarea>
+        <button class="primary-btn" id="btnApplyJson">Застосувати список</button>
+        <button class="action-btn" id="btnResetJson" style="width: 100%; margin-top: 8px;">Скинути до стандартного списку</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Вкладка 5: Батькам (Parent Gate) -->
+  <main id="tabParent" class="tab-content">
+    <div class="parent-gate-box" id="parentGateLock">
+      <div style="font-size: 48px; margin-bottom: 8px;">🛡️</div>
+      <h2 style="font-size: 20px; font-weight: 700;">Батьківський розділ</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Введіть 4-значний PIN-код (за замовчуванням 4012):</p>
+      <input type="password" id="pinInput" class="pin-input" maxlength="4" pattern="[0-9]*" inputmode="numeric">
+      <div id="pinError" style="color: var(--danger); font-size: 13px; display: none;">Невірний PIN-код</div>
+    </div>
+
+    <div class="parent-gate-box" id="parentGateSettings" style="display: none; text-align: left;">
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 12px;">⚙️ Налаштування для батьків</h2>
+      
+      <div class="settings-group">
+        <div class="settings-row">
+          <div>
+            <div style="font-weight: 600; font-size: 15px;">Перерва для очей</div>
+            <div style="font-size: 12px; color: var(--text-muted);">Нагадування відпочити після перегляду</div>
+          </div>
+          <select id="restIntervalSelect">
+            <option value="5">5 хв</option>
+            <option value="10">10 хв</option>
+            <option value="15">15 хв</option>
+            <option value="20" selected>20 хв</option>
+            <option value="30">30 хв</option>
+            <option value="45">45 хв</option>
+            <option value="60">60 хв</option>
+          </select>
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div style="font-weight: 600; font-size: 15px;">Лічильник перегляду</div>
+            <div style="font-size: 12px; color: var(--text-muted);" id="currentSessionTime">0 хв пройдено</div>
+          </div>
+          <button class="action-btn" id="btnResetTimer">Скинути таймер</button>
+        </div>
+      </div>
+
+      <button class="action-btn" id="btnLockParent" style="margin-top: 20px; width: 100%;">Заблокувати розділ</button>
+    </div>
+  </main>
+
+  <!-- Нижня панель навігації (Tab Bar) -->
+  <nav class="tab-bar">
+    <div class="tab-item active" data-tab="tabCartoons">
+      <svg viewBox="0 0 24 24"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>
+      <span>Мультики</span>
+    </div>
+    <div class="tab-item" data-tab="tabHistory">
+      <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+      <span>Історія</span>
+    </div>
+    <div class="tab-item" data-tab="tabWatchlist">
+      <svg viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+      <span>Вотч-ліст</span>
+    </div>
+    <div class="tab-item" data-tab="tabAdd">
+      <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      <span>Додати</span>
+    </div>
+    <div class="tab-item" data-tab="tabParent">
+      <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+      <span>Батькам</span>
+    </div>
+  </nav>
+
+  <!-- Плеєр Оверлей (Native iOS Video) -->
+  <div class="player-overlay" id="playerOverlay">
+    <button class="player-close-btn" id="btnClosePlayer" title="Закрити">✕</button>
+    <video id="nativeVideoPlayer" playsinline webkit-playsinline controls></video>
+
+    <!-- Діалог "Продовжити перегляд?" -->
+    <div class="resume-dialog" id="resumeDialog">
+      <div style="font-weight: 700; font-size: 15px;" id="resumeTimeText">Продовжити з 00:00?</div>
+      <div class="resume-buttons">
+        <button class="btn-resume" id="btnResumeYes">Продовжити</button>
+        <button class="btn-restart" id="btnResumeNo">Спочатку</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Оверлей перерви для очей (EyeRestOverlay) -->
+  <div class="eye-rest-overlay" id="eyeRestOverlay">
+    <div class="eye-icon">👀</div>
+    <h1 style="font-size: 26px; font-weight: 800; margin-bottom: 10px;">Час відпочити очам!</h1>
+    <p style="font-size: 16px; color: rgba(255,255,255,0.85); max-width: 320px; line-height: 1.4; margin-bottom: 24px;">
+      Ви дивитесь мультики вже <span id="restDurationNotice">20</span> хв. Зробіть коротку паузу, подивіться у віконце або попийте водички!
+    </p>
+    <button class="btn-resume" id="btnEyeRestDismiss" style="font-size: 16px; padding: 12px 28px;">
+      Продовжити перегляд
+    </button>
+  </div>
+
+  <!-- Дані та JS Логіка -->
+  <script>
+    // Початковий список мультиків із cartoons2.json
+    const INITIAL_CARTOONS = [
+      {
+    "title": "test1",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8?cartoon=1"
+  },
+  {
+    "title": "test2",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8?cartoon=2"
+  },
+  {
+    "title": "test3",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8?cartoon=3"
+  },
+  {
+    "title": "test4",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8?cartoon=4"
+  },
+  {
+    "title": "test5",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8?cartoon=5"
+  },
+  {
+    "title": "test6",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8?cartoon=6"
+  },
+  {
+    "title": "test7",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8?cartoon=7"
+  },
+  {
+    "title": "test8",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8?cartoon=8"
+  },
+  {
+    "title": "test9",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8?cartoon=9"
+  },
+  {
+    "title": "test10",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8?cartoon=10"
+  },
+  {
+    "title": "test11",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8?cartoon=11"
+  },
+  {
+    "title": "test12",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8?cartoon=12"
+  },
+  {
+    "title": "test13",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8?cartoon=13"
+  },
+  {
+    "title": "test14",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8?cartoon=14"
+  },
+  {
+    "title": "test15",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8?cartoon=15"
+  },
+  {
+    "title": "test16",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8?cartoon=16"
+  },
+  {
+    "title": "test17",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8?cartoon=17"
+  },
+  {
+    "title": "test18",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8?cartoon=18"
+  },
+  {
+    "title": "test19",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8?cartoon=19"
+  },
+  {
+    "title": "test20",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8?cartoon=20"
+  },
+  {
+    "title": "test21",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8?cartoon=21"
+  },
+  {
+    "title": "test22",
+    "image": "https://static.wikia.nocookie.net/universalstudios/images/1/1d/Minions_%26_Monsters_Official_Poster.jpg/revision/latest?cb=20260507231228",
+    "videoURL": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8?cartoon=22"
+  }
+    ];
+
+    // ==========================================
+    // Безпечне сховище (Storage Wrapper)
+    // ==========================================
+    const Storage = {
+      memory: {},
+      get(key, defaultValue = null) {
+        try {
+          const val = localStorage.getItem(key);
+          return val ? JSON.parse(val) : defaultValue;
+        } catch (e) {
+          return this.memory[key] !== undefined ? this.memory[key] : defaultValue;
+        }
+      },
+      set(key, value) {
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch (e) {
+          this.memory[key] = value;
+        }
+      }
+    };
+
+    const KEYS = {
+      PLAYBACK: 'com.inna.cartoonsapp.playbackPositions',
+      WATCH_HISTORY: 'com.inna.cartoonsapp.watchHistory',
+      WATCHLIST: 'com.inna.cartoonsapp.watchList',
+      CUSTOM_LIST: 'com.inna.cartoonsapp.customList',
+      REST_INTERVAL: 'com.inna.cartoonsapp.restIntervalMinutes',
+      PARENT_PIN: 'com.inna.cartoonsapp.parentPin'
+    };
+
+    // ==========================================
+    // Стан застосунку (App State)
+    // ==========================================
+    let currentCartoons = Storage.get(KEYS.CUSTOM_LIST, INITIAL_CARTOONS);
+    let visibleCount = 10;
+    const PAGE_SIZE = 10;
+    let currentFilter = '';
+
+    // ==========================================
+    // Playback & Watch History Stores
+    // ==========================================
+    const PlaybackStore = {
+      getAll() {
+        return Storage.get(KEYS.PLAYBACK, {});
+      },
+      getPosition(id) {
+        const entry = this.getAll()[id];
+        return (entry && entry.position >= 5) ? entry.position : null;
+      },
+      getProgress(id) {
+        const entry = this.getAll()[id];
+        if (entry && entry.duration > 0) {
+          return Math.min(Math.max(entry.position / entry.duration, 0), 1);
+        }
+        return 0;
+      },
+      save(id, position, duration) {
+        const all = this.getAll();
+        all[id] = { position, duration: duration || (all[id] && all[id].duration) };
+        Storage.set(KEYS.PLAYBACK, all);
+      },
+      clear(id) {
+        const all = this.getAll();
+        delete all[id];
+        Storage.set(KEYS.PLAYBACK, all);
+      }
+    };
+
+    const WatchHistoryStore = {
+      getAll() {
+        return Storage.get(KEYS.WATCH_HISTORY, []);
+      },
+      record(cartoon, position = 0, duration = null, isFinished = false) {
+        let history = this.getAll();
+        history = history.filter(item => item.videoURL !== cartoon.videoURL);
+        history.unshift({
+          id: cartoon.videoURL,
+          title: cartoon.title,
+          image: cartoon.image,
+          videoURL: cartoon.videoURL,
+          lastWatchedAt: new Date().toISOString(),
+          lastPosition: position,
+          duration: duration,
+          isFinished: isFinished
+        });
+        if (history.length > 30) history = history.slice(0, 30);
+        Storage.set(KEYS.WATCH_HISTORY, history);
+        renderShelf();
+        renderHistory();
+      },
+      remove(id) {
+        let history = this.getAll().filter(item => item.videoURL !== id);
+        Storage.set(KEYS.WATCH_HISTORY, history);
+        PlaybackStore.clear(id);
+        renderShelf();
+        renderHistory();
+        renderGrid();
+      },
+      clearAll() {
+        Storage.set(KEYS.WATCH_HISTORY, []);
+        Storage.set(KEYS.PLAYBACK, {});
+        renderShelf();
+        renderHistory();
+        renderGrid();
+      }
+    };
+
+    const WatchlistStore = {
+      getAll() {
+        return Storage.get(KEYS.WATCHLIST, []);
+      },
+      has(id) {
+        return this.getAll().some(item => item.videoURL === id);
+      },
+      toggle(cartoon) {
+        let list = this.getAll();
+        if (this.has(cartoon.videoURL)) {
+          list = list.filter(item => item.videoURL !== cartoon.videoURL);
+        } else {
+          list.unshift({
+            id: cartoon.videoURL,
+            title: cartoon.title,
+            image: cartoon.image,
+            videoURL: cartoon.videoURL,
+            addedAt: new Date().toISOString()
+          });
+        }
+        Storage.set(KEYS.WATCHLIST, list);
+        renderGrid();
+        renderWatchlist();
+      }
+    };
+
+    // ==========================================
+    // Екранний час (ScreenTime & EyeRest)
+    // ==========================================
+    let screenTimeMinutes = 0;
+    let restIntervalMinutes = Storage.get(KEYS.REST_INTERVAL, 20);
+    let screenTimer = null;
+
+    function initScreenTimer() {
+      if (screenTimer) clearInterval(screenTimer);
+      screenTimer = setInterval(() => {
+        screenTimeMinutes++;
+        updateScreenTimeDisplay();
+        if (screenTimeMinutes >= restIntervalMinutes) {
+          triggerEyeRest();
+        }
+      }, 60000); // щохвилини
+      updateScreenTimeDisplay();
+    }
+
+    function updateScreenTimeDisplay() {
+      const remaining = Math.max(restIntervalMinutes - screenTimeMinutes, 0);
+      const text = `${remaining} хв`;
+      document.getElementById('screenTimeText').textContent = text;
+      document.getElementById('currentSessionTime').textContent = `${screenTimeMinutes} хв пройдено`;
+      const pill = document.getElementById('timerPill');
+      if (remaining <= 3) {
+        pill.classList.add('active');
+      } else {
+        pill.classList.remove('active');
+      }
+    }
+
+    function triggerEyeRest() {
+      const video = document.getElementById('nativeVideoPlayer');
+      if (!video.paused) video.pause();
+      document.getElementById('restDurationNotice').textContent = restIntervalMinutes;
+      document.getElementById('eyeRestOverlay').style.display = 'flex';
+    }
+
+    document.getElementById('btnEyeRestDismiss').addEventListener('click', () => {
+      document.getElementById('eyeRestOverlay').style.display = 'none';
+      screenTimeMinutes = 0;
+      updateScreenTimeDisplay();
+      const video = document.getElementById('nativeVideoPlayer');
+      if (document.getElementById('playerOverlay').classList.contains('open')) {
+        video.play().catch(() => {});
+      }
+    });
+
+    document.getElementById('btnResetTimer').addEventListener('click', () => {
+      screenTimeMinutes = 0;
+      updateScreenTimeDisplay();
+      alert('Таймер перегляду скинуто!');
+    });
+
+    // ==========================================
+    // Рендеринг UI
+    // ==========================================
+    function formatTime(seconds) {
+      if (!seconds || isNaN(seconds)) return '00:00';
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function renderPosterCard(cartoon, showWatchlistBtn = true) {
+      const card = document.createElement('div');
+      card.className = 'cartoon-card';
+
+      const progress = PlaybackStore.getProgress(cartoon.videoURL);
+      const isBookmarked = WatchlistStore.has(cartoon.videoURL);
+
+      card.innerHTML = `
+        <div class="poster-wrap">
+          <img src="${cartoon.image}" alt="${cartoon.title || ''}" loading="lazy" referrerpolicy="no-referrer">
+          ${showWatchlistBtn ? `
+            <button class="btn-watchlist-toggle ${isBookmarked ? 'active' : ''}" title="В обране">
+              ${isBookmarked ? '★' : '☆'}
+            </button>
+          ` : ''}
+          ${progress > 0 ? `
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" style="width: ${progress * 100}%"></div>
+            </div>
+          ` : ''}
+        </div>
+        <div class="cartoon-title">${cartoon.title || 'Без назви'}</div>
+      `;
+
+      // Клік на постер — відкрити плеєр
+      card.querySelector('.poster-wrap').addEventListener('click', (e) => {
+        if (e.target.closest('.btn-watchlist-toggle')) return;
+        openPlayer(cartoon);
+      });
+
+      // Клік на закладку
+      if (showWatchlistBtn) {
+        card.querySelector('.btn-watchlist-toggle').addEventListener('click', (e) => {
+          e.stopPropagation();
+          WatchlistStore.toggle(cartoon);
+        });
+      }
+
+      return card;
+    }
+
+    function getFilteredCartoons() {
+      if (!currentFilter.trim()) return currentCartoons;
+      const q = currentFilter.toLowerCase().trim();
+      return currentCartoons.filter(c => (c.title || '').toLowerCase().includes(q));
+    }
+
+    function renderGrid(reset = false) {
+      const grid = document.getElementById('cartoonsGrid');
+      const filtered = getFilteredCartoons();
+
+      if (reset) {
+        visibleCount = PAGE_SIZE;
+      }
+      if (!visibleCount || visibleCount < PAGE_SIZE) {
+        visibleCount = PAGE_SIZE;
+      }
+
+      grid.innerHTML = '';
+      const toShow = filtered.slice(0, visibleCount);
+      const fragment = document.createDocumentFragment();
+      toShow.forEach(c => fragment.appendChild(renderPosterCard(c)));
+      grid.appendChild(fragment);
+
+      updatePagination(filtered.length);
+    }
+
+    let isLoadingMore = false;
+    function loadMoreCartoons() {
+      const filtered = getFilteredCartoons();
+      if (visibleCount >= filtered.length || isLoadingMore) return;
+
+      isLoadingMore = true;
+      const grid = document.getElementById('cartoonsGrid');
+      const start = visibleCount;
+      const end = Math.min(visibleCount + PAGE_SIZE, filtered.length);
+      const fragment = document.createDocumentFragment();
+
+      for (let i = start; i < end; i++) {
+        fragment.appendChild(renderPosterCard(filtered[i]));
+      }
+
+      grid.appendChild(fragment);
+      visibleCount = end;
+      updatePagination(filtered.length);
+      isLoadingMore = false;
+    }
+
+    function updatePagination(totalCount) {
+      const sentinel = document.getElementById('scrollSentinel');
+      const loading = document.getElementById('infiniteLoading');
+      const btnMore = document.getElementById('btnLoadMore');
+
+      if (visibleCount >= totalCount) {
+        if (sentinel) sentinel.style.display = 'none';
+        if (loading) loading.style.display = 'none';
+        if (btnMore) btnMore.style.display = 'none';
+      } else {
+        if (sentinel) sentinel.style.display = 'block';
+        if (loading) loading.style.display = 'block';
+        if (btnMore) btnMore.style.display = 'none';
+      }
+    }
+
+    let scrollObserver = null;
+    function setupInfiniteScroll() {
+      const sentinel = document.getElementById('scrollSentinel');
+      if (!sentinel) return;
+
+      if (scrollObserver) scrollObserver.disconnect();
+
+      scrollObserver = new IntersectionObserver((entries) => {
+        const isVisible = entries.some(e => e.isIntersecting);
+        if (isVisible) {
+          const filtered = getFilteredCartoons();
+          if (visibleCount < filtered.length) {
+            loadMoreCartoons();
+          }
+        }
+      }, {
+        root: null,
+        rootMargin: '350px 0px',
+        threshold: 0
+      });
+
+      scrollObserver.observe(sentinel);
+    }
+
+    function renderShelf() {
+      const shelf = document.getElementById('shelfScroll');
+      const container = document.getElementById('shelfContainer');
+      shelf.innerHTML = '';
+
+      const history = WatchHistoryStore.getAll().slice(0, 10);
+      if (history.length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+
+      container.style.display = 'block';
+      history.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'shelf-card';
+        const progress = PlaybackStore.getProgress(item.videoURL);
+
+        card.innerHTML = `
+          <div class="poster-wrap">
+            <img src="${item.image}" alt="${item.title || ''}" loading="lazy" referrerpolicy="no-referrer">
+            ${progress > 0 ? `
+              <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" style="width: ${progress * 100}%"></div>
+              </div>
+            ` : ''}
+          </div>
+          <div class="cartoon-title">${item.title || 'Без назви'}</div>
+        `;
+        card.addEventListener('click', () => openPlayer(item));
+        shelf.appendChild(card);
+      });
+    }
+
+    function renderHistory() {
+      const container = document.getElementById('historyList');
+      container.innerHTML = '';
+      const history = WatchHistoryStore.getAll();
+
+      if (history.length === 0) {
+        container.innerHTML = '<div class="empty-state">Історія переглядів порожня 🎬</div>';
+        return;
+      }
+
+      history.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        const progress = PlaybackStore.getProgress(item.videoURL);
+        const timeStr = formatTime(item.lastPosition);
+
+        div.innerHTML = `
+          <div class="history-poster">
+            <img src="${item.image}" referrerpolicy="no-referrer">
+          </div>
+          <div class="history-info">
+            <div class="history-title">${item.title || 'Без назви'}</div>
+            <div class="history-meta">
+              ${item.isFinished ? '✅ Переглянуто повністю' : `Зупинено на ${timeStr}`}
+            </div>
+            ${progress > 0 ? `
+              <div class="history-progress">
+                <div class="history-progress-fill" style="width: ${progress * 100}%"></div>
+              </div>
+            ` : ''}
+          </div>
+          <button class="btn-delete-item" title="Видалити">✕</button>
+        `;
+
+        div.querySelector('.history-poster').addEventListener('click', () => openPlayer(item));
+        div.querySelector('.history-info').addEventListener('click', () => openPlayer(item));
+        div.querySelector('.btn-delete-item').addEventListener('click', (e) => {
+          e.stopPropagation();
+          WatchHistoryStore.remove(item.videoURL);
+        });
+
+        container.appendChild(div);
+      });
+    }
+
+    function renderWatchlist() {
+      const grid = document.getElementById('watchlistGrid');
+      grid.innerHTML = '';
+      const list = WatchlistStore.getAll();
+
+      if (list.length === 0) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;">Ваш вотч-ліст порожній ⭐<br>Тисніть на зірочку біля будь-якого мультика!</div>';
+        return;
+      }
+
+      list.forEach(item => grid.appendChild(renderPosterCard(item, true)));
+    }
+
+    // ==========================================
+    // Плеєр (Нативний для iOS + Resume)
+    // ==========================================
+    const video = document.getElementById('nativeVideoPlayer');
+    const playerOverlay = document.getElementById('playerOverlay');
+    const resumeDialog = document.getElementById('resumeDialog');
+    let currentPlayingCartoon = null;
+    let saveInterval = null;
+
+    function openPlayer(cartoon) {
+      currentPlayingCartoon = cartoon;
+      playerOverlay.classList.add('open');
+
+      const savedSec = PlaybackStore.getPosition(cartoon.videoURL);
+
+      // Завантажуємо відео
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Нативний iOS Safari плеєр
+        video.src = cartoon.videoURL;
+      } else if (window.Hls && Hls.isSupported()) {
+        // Fallback для Desktop Chrome
+        if (video.hlsInstance) video.hlsInstance.destroy();
+        const hls = new Hls();
+        hls.loadSource(cartoon.videoURL);
+        hls.attachMedia(video);
+        video.hlsInstance = hls;
+      } else {
+        video.src = cartoon.videoURL;
+      }
+
+      // Перевіряємо чи є збережена позиція
+      if (savedSec && savedSec > 5) {
+        document.getElementById('resumeTimeText').textContent = `Продовжити перегляд з ${formatTime(savedSec)}?`;
+        resumeDialog.style.display = 'flex';
+      } else {
+        resumeDialog.style.display = 'none';
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      }
+
+      WatchHistoryStore.record(cartoon, savedSec || 0, null, false);
+
+      // Регулярне збереження позиції
+      if (saveInterval) clearInterval(saveInterval);
+      saveInterval = setInterval(() => {
+        if (!video.paused && video.currentTime > 0) {
+          PlaybackStore.save(cartoon.videoURL, video.currentTime, video.duration);
+          WatchHistoryStore.record(cartoon, video.currentTime, video.duration, false);
+        }
+      }, 2000);
+    }
+
+    function closePlayer() {
+      if (currentPlayingCartoon && video.currentTime > 0) {
+        PlaybackStore.save(currentPlayingCartoon.videoURL, video.currentTime, video.duration);
+      }
+      if (saveInterval) clearInterval(saveInterval);
+      video.pause();
+      video.src = '';
+      if (video.hlsInstance) {
+        video.hlsInstance.destroy();
+        video.hlsInstance = null;
+      }
+      playerOverlay.classList.remove('open');
+      resumeDialog.style.display = 'none';
+      currentPlayingCartoon = null;
+      renderGrid();
+      renderShelf();
+      renderHistory();
+    }
+
+    document.getElementById('btnClosePlayer').addEventListener('click', closePlayer);
+
+    document.getElementById('btnResumeYes').addEventListener('click', () => {
+      const savedSec = PlaybackStore.getPosition(currentPlayingCartoon.videoURL);
+      resumeDialog.style.display = 'none';
+      if (savedSec) video.currentTime = savedSec;
+      video.play().catch(() => {});
+    });
+
+    document.getElementById('btnResumeNo').addEventListener('click', () => {
+      resumeDialog.style.display = 'none';
+      video.currentTime = 0;
+      video.play().catch(() => {});
+    });
+
+    video.addEventListener('ended', () => {
+      if (currentPlayingCartoon) {
+        WatchHistoryStore.record(currentPlayingCartoon, video.duration, video.duration, true);
+        PlaybackStore.clear(currentPlayingCartoon.videoURL);
+      }
+    });
+
+    // ==========================================
+    // Навігація вкладок
+    // ==========================================
+    const tabs = document.querySelectorAll('.tab-item');
+    const contents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const targetId = tab.getAttribute('data-tab');
+
+        tabs.forEach(t => t.classList.remove('active'));
+        contents.forEach(c => c.classList.remove('active'));
+
+        tab.classList.add('active');
+        document.getElementById(targetId).classList.add('active');
+
+        if (targetId === 'tabHistory') renderHistory();
+        if (targetId === 'tabWatchlist') renderWatchlist();
+        if (targetId === 'tabCartoons') setupInfiniteScroll();
+      });
+    });
+
+    // ==========================================
+    // Пошук та Пагінація
+    // ==========================================
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      currentFilter = e.target.value;
+      renderGrid(true);
+    });
+
+    document.getElementById('btnLoadMore').addEventListener('click', () => {
+      loadMoreCartoons();
+    });
+
+    // Резервний обробник скролу (працює разом із IntersectionObserver)
+    window.addEventListener('scroll', () => {
+      const tabCartoons = document.getElementById('tabCartoons');
+      if (!tabCartoons || !tabCartoons.classList.contains('active')) return;
+      const filtered = getFilteredCartoons();
+      if (visibleCount >= filtered.length) return;
+
+      if ((window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 350)) {
+        loadMoreCartoons();
+      }
+    }, { passive: true });
+
+    document.getElementById('btnClearHistory').addEventListener('click', () => {
+      if (confirm('Видалити всю історію переглядів?')) {
+        WatchHistoryStore.clearAll();
+      }
+    });
+
+    // ==========================================
+    // Розумний парсер JSON (Smart & Fault-Tolerant Parser)
+    // ==========================================
+    function formatCartoonObject(obj) {
+      return {
+        title: obj.title || obj.name || 'Без назви',
+        image: obj.image || obj.poster || obj.imageURL || '',
+        videoURL: obj.videoURL || obj.url || obj.video || obj.link || ''
+      };
+    }
+
+    function normalizeCartoonsArray(parsed) {
+      let arr = [];
+      if (Array.isArray(parsed)) {
+        arr = parsed;
+      } else if (parsed && typeof parsed === 'object') {
+        if (Array.isArray(parsed.cartoons)) arr = parsed.cartoons;
+        else if (Array.isArray(parsed.items)) arr = parsed.items;
+        else if (Array.isArray(parsed.data)) arr = parsed.data;
+        else if (parsed.videoURL) arr = [parsed];
+      }
+
+      return arr
+        .filter(item => item && typeof item === 'object')
+        .map(formatCartoonObject)
+        .filter(item => item.videoURL || item.title);
+    }
+
+    function repairUnescapedQuotes(block) {
+      return block.replace(/("(?:title|image|videoURL|description|name|id)")\s*:\s*"([\s\S]*?)"(?=\s*[,}\n])/g, (match, key, val) => {
+        const escapedVal = val.replace(/(?<!\\)"/g, '\\"');
+        return `${key}: "${escapedVal}"`;
+      });
+    }
+
+    function extractCartoonsFaultTolerant(text) {
+      const items = [];
+      let skipped = 0;
+      let depth = 0;
+      let inString = false;
+      let escape = false;
+      let startIdx = -1;
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        if (inString) {
+          if (escape) {
+            escape = false;
+          } else if (char === '\\') {
+            escape = true;
+          } else if (char === '"') {
+            inString = false;
+          }
+          continue;
+        }
+        if (char === '"') {
+          inString = true;
+          continue;
+        }
+        if (char === '{') {
+          if (depth === 0) startIdx = i;
+          depth++;
+        } else if (char === '}') {
+          depth--;
+          if (depth === 0 && startIdx !== -1) {
+            let block = text.substring(startIdx, i + 1);
+            startIdx = -1;
+            block = block.replace(/,\s*}/g, '}');
+            let obj = null;
+            try {
+              obj = JSON.parse(block);
+            } catch (e1) {
+              try {
+                const repaired = repairUnescapedQuotes(block);
+                obj = JSON.parse(repaired);
+              } catch (e2) {
+                skipped++;
+              }
+            }
+            if (obj && (obj.videoURL || obj.image || obj.title)) {
+              items.push(formatCartoonObject(obj));
+            }
+          }
+        }
+      }
+      return { items, errors: skipped };
+    }
+
+    function smartParseCartoons(rawText) {
+      if (!rawText || !rawText.trim()) {
+        throw new Error('Файл або текст порожній');
+      }
+
+      let text = rawText.trim();
+
+      // 1. Прибираємо UTF BOM маркер
+      if (text.charCodeAt(0) === 0xFEFF) {
+        text = text.slice(1).trim();
+      }
+
+      // 2. Спроба 1: Стандартний чистий JSON.parse
+      try {
+        const parsed = JSON.parse(text);
+        const valid = normalizeCartoonsArray(parsed);
+        if (valid.length > 0) return { items: valid, errors: 0 };
+      } catch (_) {}
+
+      // 3. Спроба 2: Авто-виправлення зайвих ком (trailing commas) та коментарів
+      let cleaned = text
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/(^|[^\\:])\/\/.*$/gm, '$1')
+        .replace(/,\s*([\]}])/g, '$1')
+        .replace(/\}\s*\{/g, '},\n{');
+
+      try {
+        const parsed = JSON.parse(cleaned);
+        const valid = normalizeCartoonsArray(parsed);
+        if (valid.length > 0) return { items: valid, errors: 0 };
+      } catch (_) {}
+
+      // 4. Спроба 3: Загортання в [ ... ], якщо дужки пропущено
+      if (!cleaned.startsWith('[')) {
+        try {
+          const wrapped = '[' + cleaned.replace(/^[^{\[]*/, '').replace(/[^}\]]*$/, '') + ']';
+          const parsed = JSON.parse(wrapped.replace(/,\s*([\]}])/g, '$1'));
+          const valid = normalizeCartoonsArray(parsed);
+          if (valid.length > 0) return { items: valid, errors: 0 };
+        } catch (_) {}
+      }
+
+      // 5. Спроба 4: Розумне пооб'єктне вилучення (рятує 2000-рядкові файли з поодинокими помилками)
+      const extracted = extractCartoonsFaultTolerant(text);
+      if (extracted.items.length > 0) {
+        return extracted;
+      }
+
+      throw new Error('Не вдалося розпізнати структуру JSON. Перевірте формат файлу.');
+    }
+
+    // ==========================================
+    // Імпорт JSON (Вкладка "Додати")
+    // ==========================================
+    document.getElementById('jsonFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const result = smartParseCartoons(event.target.result);
+          const list = result.items;
+          if (list.length > 0) {
+            currentCartoons = list;
+            Storage.set(KEYS.CUSTOM_LIST, list);
+            renderGrid(true);
+            let msg = `Успішно завантажено ${list.length} мультиків!`;
+            if (result.errors > 0) {
+              msg += ` (Пропущено ${result.errors} пошкоджених записів)`;
+            }
+            alert(msg);
+            document.querySelector('[data-tab="tabCartoons"]').click();
+          } else {
+            alert('У файлі не знайдено жодного мультика з відеопосиланням або назвою');
+          }
+        } catch (err) {
+          alert('Помилка читання JSON-файлу: ' + err.message);
+        } finally {
+          e.target.value = '';
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById('btnApplyJson').addEventListener('click', () => {
+      const text = document.getElementById('jsonTextInput').value.trim();
+      if (!text) return;
+      try {
+        const result = smartParseCartoons(text);
+        const list = result.items;
+        if (list.length > 0) {
+          currentCartoons = list;
+          Storage.set(KEYS.CUSTOM_LIST, list);
+          renderGrid(true);
+          let msg = `Застосовано ${list.length} мультиків!`;
+          if (result.errors > 0) {
+            msg += ` (Пропущено ${result.errors} пошкоджених записів)`;
+          }
+          alert(msg);
+          document.querySelector('[data-tab="tabCartoons"]').click();
+        } else {
+          alert('Не знайдено жодного мультика у введеному тексті');
+        }
+      } catch (err) {
+        alert('Помилка JSON: ' + err.message);
+      }
+    });
+
+    document.getElementById('btnResetJson').addEventListener('click', () => {
+      if (confirm('Скинути список до оригінального?')) {
+        currentCartoons = INITIAL_CARTOONS;
+        Storage.set(KEYS.CUSTOM_LIST, null);
+        renderGrid(true);
+        alert('Відновлено оригінальний список!');
+      }
+    });
+
+    // ==========================================
+    // Батьківський розділ (Parent Gate)
+    // ==========================================
+    const DEFAULT_PIN = '4012';
+    const pinInput = document.getElementById('pinInput');
+    const pinError = document.getElementById('pinError');
+    const lockBox = document.getElementById('parentGateLock');
+    const settingsBox = document.getElementById('parentGateSettings');
+
+    pinInput.addEventListener('input', () => {
+      const savedPin = Storage.get(KEYS.PARENT_PIN, DEFAULT_PIN);
+      if (pinInput.value === savedPin) {
+        pinError.style.display = 'none';
+        lockBox.style.display = 'none';
+        settingsBox.style.display = 'block';
+        pinInput.value = '';
+      } else if (pinInput.value.length >= 4) {
+        pinError.style.display = 'block';
+        pinInput.value = '';
+      }
+    });
+
+    document.getElementById('btnLockParent').addEventListener('click', () => {
+      settingsBox.style.display = 'none';
+      lockBox.style.display = 'block';
+    });
+
+    const restSelect = document.getElementById('restIntervalSelect');
+    restSelect.value = restIntervalMinutes;
+    restSelect.addEventListener('change', (e) => {
+      restIntervalMinutes = parseInt(e.target.value, 10);
+      Storage.set(KEYS.REST_INTERVAL, restIntervalMinutes);
+      updateScreenTimeDisplay();
+    });
+
+    // Початкова ініціалізація
+    renderShelf();
+    renderGrid(true);
+    setupInfiniteScroll();
+    initScreenTimer();
+  </script>
+</body>
+</html>
